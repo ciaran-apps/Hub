@@ -5,7 +5,19 @@
     "repo": "Hub",
     "owner": "ciaran-apps",
     "url": "https://apps.ciarandevine.uk/",
-    "what": "This app: all your apps in one place, with change requests."
+    "what": "This app: all your apps in one place, with change requests.",
+    "health": {
+      "risk": "Low",
+      "data": "Requests are GitHub issues in the Hub repo. Categories are saved to your account once you sign in, otherwise on this phone only.",
+      "backup": "Requests are kept by GitHub. Categories sync to your account when signed in.",
+      "security": [
+        "The Hub repo is public, so anyone who finds it can read your requests. Don't put passwords or personal details in a request."
+      ],
+      "issues": [
+        "Sign in on App Hub so categories are backed up (add apps.ciarandevine.uk to Firebase Authorized domains first)."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "work-tt",
@@ -13,7 +25,19 @@
     "repo": "Work-TT",
     "owner": "ciaran-apps",
     "url": "https://ciaran-apps.github.io/Work-TT/",
-    "what": "Time on work tickets, ticket statuses, notes and CSV export."
+    "what": "Time on work tickets, ticket statuses, notes and CSV export.",
+    "health": {
+      "risk": "Low",
+      "data": "Saved to your account (ciaran-apps), and each signed-in device keeps a copy.",
+      "backup": "Cloud copy plus a copy on each device. Back up, Restore and Export CSV buttons in the app.",
+      "security": [
+        "Only your signed-in account can read or change it."
+      ],
+      "issues": [
+        "Uninstall the old Netlify copy and delete its Netlify project."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "bet-tracker",
@@ -21,7 +45,19 @@
     "repo": "Bet-Tracker",
     "owner": "ciaran-apps",
     "url": "https://bets.ciarandevine.uk/",
-    "what": "Bets, wins and losses across the season."
+    "what": "Bets, wins and losses across the season.",
+    "health": {
+      "risk": "Low",
+      "data": "Saved to your account (ciaran-apps), and each signed-in device keeps a copy.",
+      "backup": "Cloud copy plus a copy on each device. Back up (JSON), Restore and Export to spreadsheet (CSV) in the app.",
+      "security": [
+        "Only your signed-in account can read or change it."
+      ],
+      "issues": [
+        "Uninstall the old Netlify copy and delete its Netlify project."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "quizzle",
@@ -29,7 +65,17 @@
     "repo": "Quizzle",
     "owner": "ciaran-apps",
     "url": "https://quiz.ciarandevine.uk/",
-    "what": "Hard daily quiz with fresh, fact-checked questions every day."
+    "what": "Hard daily quiz with fresh, fact-checked questions every day.",
+    "health": {
+      "risk": "Low",
+      "data": "Questions live in the repo. Your streak and today's progress are on this phone only.",
+      "backup": "Questions are kept by GitHub. Your streak isn't backed up.",
+      "security": [
+        "Nothing personal is stored."
+      ],
+      "issues": [],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "tvshows",
@@ -37,7 +83,17 @@
     "repo": "Tvshows",
     "owner": "ciaran-apps",
     "url": "https://tvshows.ciarandevine.uk/",
-    "what": "TV rewatch tracker with episodes, watch log and history."
+    "what": "TV rewatch tracker with episodes, watch log and history.",
+    "health": {
+      "risk": "Low",
+      "data": "Saved to your account (ciaran-apps), and each signed-in device keeps a copy.",
+      "backup": "Cloud copy plus a copy on each device. Backup, Download file and Import backup in the app.",
+      "security": [
+        "Only your signed-in account can read or change it."
+      ],
+      "issues": [],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "betbuilder",
@@ -46,7 +102,17 @@
     "owner": "ciaran-apps",
     "url": "https://betbuilder.ciarandevine.uk/",
     "what": "Premier League stats, match picks and a prediction tracker.",
-    "icon": "icons/icon-192.png"
+    "icon": "icons/icon-192.png",
+    "health": {
+      "risk": "Low",
+      "data": "Stats are rebuilt by a GitHub Action three times a day and kept in the repo. Only your hidden-player choices are on this phone.",
+      "backup": "Everything can be rebuilt. Hidden-player choices aren't backed up.",
+      "security": [
+        "Nothing personal is stored."
+      ],
+      "issues": [],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "united",
@@ -54,7 +120,19 @@
     "repo": "United",
     "owner": "ciaran-apps",
     "url": "https://united.ciarandevine.uk/",
-    "what": "Man United squad, transfers, managers and player stats."
+    "what": "Man United squad, transfers, managers and player stats.",
+    "health": {
+      "risk": "Low",
+      "data": "Squad and stats live in the repo. Your saved line-ups and formations are on this phone only.",
+      "backup": "Line-ups: Backup button in the app (download a file). Not synced to your account.",
+      "security": [
+        "Nothing personal is stored."
+      ],
+      "issues": [
+        "If this phone's site data is cleared, line-ups are lost unless you've downloaded a backup."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "workout-roulette",
@@ -62,7 +140,17 @@
     "repo": "Workout-Roulette",
     "owner": "ciaran-apps",
     "url": "https://workouts.ciarandevine.uk/",
-    "what": "Random HIIT and stretching sessions with a timer and log."
+    "what": "Random HIIT and stretching sessions with a timer and log.",
+    "health": {
+      "risk": "Low",
+      "data": "Saved to your account (ciaran-apps) when signed in; signed out, this phone only.",
+      "backup": "Cloud copy when signed in. Export and Import under Log, then Backup.",
+      "security": [
+        "Only your signed-in account can read or change it."
+      ],
+      "issues": [],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "ffauction",
@@ -71,7 +159,21 @@
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/FFAuction/",
     "what": "Auction-draft fantasy league with standings and stats.",
-    "shared": true
+    "shared": true,
+    "health": {
+      "risk": "High",
+      "data": "Firebase project fantasy-football-auction (league, squads, weekly results). No sign-in.",
+      "backup": "No automatic backup. Squads and points can be re-imported from Excel, but admin changes made in the app would be lost.",
+      "security": [
+        "The admin password is in the page code, so anyone who views the code can find it.",
+        "The database is open: anyone with the app's address could change or delete the league."
+      ],
+      "issues": [
+        "Needs proper admin sign-in and locked database rules.",
+        "Friends use this app: changes are checked with you first."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "lms",
@@ -80,7 +182,19 @@
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/LMS/",
     "what": "Premier League last-player-standing game for the group.",
-    "shared": true
+    "shared": true,
+    "health": {
+      "risk": "Low",
+      "data": "Firebase project last-man-standing, with anonymous sign-in for players.",
+      "backup": "No backup or export. The organiser can reload fixtures, but picks and results live only in the database.",
+      "security": [
+        "Proper database rules check codes, deadlines and the organiser passcode on the server."
+      ],
+      "issues": [
+        "Friends use this app: changes are checked with you first."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "syndicate",
@@ -89,7 +203,21 @@
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/Syndicate/",
     "what": "Group ledger, pot tracker and Lotto log.",
-    "shared": true
+    "shared": true,
+    "health": {
+      "risk": "Medium",
+      "data": "Firebase project syndicate. No sign-in; a PIN hides the screens.",
+      "backup": "Automatic daily cloud backup, kept about 60 days. Saving pauses with a Retry banner if loading fails.",
+      "security": [
+        "The PIN is checked in the browser only, so the database itself is open to anyone with the app's address.",
+        "The daily backups are in the same open database, so they could be deleted too."
+      ],
+      "issues": [
+        "Add sign-in and locked database rules.",
+        "Friends use this app: changes are checked with you first."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "match-predictor",
@@ -97,7 +225,19 @@
     "repo": "Match-Predictor",
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/Match-Predictor/",
-    "what": "Over 2.5 goals and both-teams-to-score chances, updated daily."
+    "what": "Over 2.5 goals and both-teams-to-score chances, updated daily.",
+    "health": {
+      "risk": "Low",
+      "data": "Match data is rebuilt every morning by a GitHub Action and kept in the repo. Your tracked picks are on this phone only.",
+      "backup": "Match data can always be rebuilt. Your tracked picks aren't backed up.",
+      "security": [
+        "Nothing personal is stored."
+      ],
+      "issues": [
+        "If this phone's site data is cleared, your tracked picks are lost."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "dailydisciplines",
@@ -105,7 +245,20 @@
     "repo": "DailyDisciplines",
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/DailyDisciplines/",
-    "what": "Daily habits with streaks and XP, plus weight, calories and drinks."
+    "what": "Daily habits with streaks and XP, plus weight, calories and drinks.",
+    "health": {
+      "risk": "Medium",
+      "data": "Kept on this phone, with a sync copy in Firebase project daily-disciplines. No sign-in.",
+      "backup": "Automatic daily cloud backups with Restore from backup. An empty phone can no longer overwrite the cloud (fixed 22 Oct).",
+      "security": [
+        "The database is open: anyone with the app's address could read or change it, including weight and health entries."
+      ],
+      "issues": [
+        "Lost all data on 22 Oct before the fix; habits need rebuilding.",
+        "Add sign-in and locked database rules."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "running-log",
@@ -113,7 +266,17 @@
     "repo": "Running-Log",
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/Running-Log/",
-    "what": "Running mileage, shoe rotation and race log."
+    "what": "Running mileage, shoe rotation and race log.",
+    "health": {
+      "risk": "Low",
+      "data": "Firebase project running-log, with email and password sign-in.",
+      "backup": "Cloud copy. Export Data and Import Data under Backup & Restore.",
+      "security": [
+        "Signed in with email and password."
+      ],
+      "issues": [],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "bills",
@@ -121,7 +284,19 @@
     "repo": "Bills",
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/Bills/",
-    "what": "Household bills, savings, credit card and calendar."
+    "what": "Household bills, savings, credit card and calendar.",
+    "health": {
+      "risk": "Low",
+      "data": "Firebase project bills-and-savings, shared by household, with anonymous sign-in. A local-only mode is available.",
+      "backup": "Cloud copy. Bills and entries are saved separately, so one bad save can't wipe a list. No export button.",
+      "security": [
+        "Uses anonymous sign-in rather than your account, so access depends on the household link rather than a password."
+      ],
+      "issues": [
+        "No way to download a copy of your data."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "ivf",
@@ -129,7 +304,19 @@
     "repo": "IVF",
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/IVF/",
-    "what": "IVF trips, treatment and spending."
+    "what": "IVF trips, treatment and spending.",
+    "health": {
+      "risk": "Low",
+      "data": "Firebase project ivf-expenses, with email and password sign-in.",
+      "backup": "Cloud copy. No export button.",
+      "security": [
+        "Signed in with email and password."
+      ],
+      "issues": [
+        "No way to download a copy of your data."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "poker",
@@ -137,7 +324,20 @@
     "repo": "Poker",
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/Poker/",
-    "what": "Review poker hands against game-theory-optimal play."
+    "what": "Review poker hands against game-theory-optimal play.",
+    "health": {
+      "risk": "Medium",
+      "data": "Saved to your account (ciaran-apps) once you've signed in on the Poker page; until then, this phone only.",
+      "backup": "Cloud copy once signed in.",
+      "security": [
+        "Only your signed-in account can read or change it."
+      ],
+      "issues": [
+        "Sign in once on the Poker page so the phone's hands upload.",
+        "Needs its own address (e.g. poker.ciarandevine.uk) before it can be installed."
+      ],
+      "checked": "2026-11-07"
+    }
   },
   {
     "id": "rota",
@@ -146,6 +346,18 @@
     "owner": "ciaranpdevine-art",
     "url": "https://ciaranpdevine-art.github.io/Rota/",
     "what": "Work hours by site, week by week (no longer used).",
-    "retired": true
+    "retired": true,
+    "health": {
+      "risk": "Medium",
+      "data": "Firebase project work-rota. No sign-in.",
+      "backup": "No backup or export.",
+      "security": [
+        "The database is open: anyone with the app's address could change or delete your hours."
+      ],
+      "issues": [
+        "Not in use. Safe to leave, or archive the repo."
+      ],
+      "checked": "2026-11-07"
+    }
   }
 ]
