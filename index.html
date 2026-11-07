@@ -49,9 +49,11 @@ h1{margin:0;font-size:28px;line-height:1.1;letter-spacing:-.01em}
 .list{display:flex;flex-direction:column;gap:10px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0}
 .card.attn{border-color:var(--accent)}
-.head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:14px 14px 12px;cursor:pointer;align-items:start}
+.head{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 12px;padding:14px 14px 12px;cursor:pointer;align-items:start}
 .title{font-weight:700;font-size:17px}
-.what{grid-column:1/-1;color:var(--muted);font-size:14px;margin:0}
+.ico{grid-row:span 2;width:44px;height:44px;border-radius:11px;object-fit:cover;background:var(--accent-soft);display:grid;place-items:center;font-weight:800;font-size:19px;color:var(--accent)}
+.card.retired .ico{filter:grayscale(1);opacity:.6}
+.what{grid-column:2/-1;color:var(--muted);font-size:14px;margin:0}
 .counts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .tag{font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .t-wait{background:var(--wait-soft);color:var(--wait)}
@@ -270,12 +272,14 @@ function renderTabs(){
     + cs.map(c => `<button class="tab" type="button" data-tab="${esc(c)}" aria-pressed="${tab.toLowerCase() === c.toLowerCase()}">${esc(c)}<small>${count(c)}</small></button>`).join("")
     + (none ? `<button class="tab" type="button" data-tab="none" aria-pressed="${tab === "none"}">No category<small>${none}</small></button>` : "");
 }
+function iconOf(a){ return a.icon ? new URL(a.icon, a.url).href : a.url + "icon-192.png"; }
 function cardHtml(a){
   const rq = reqsFor(a.id), open = rq.filter(i => isOpen(i._st));
   const counts = ["Needs info","In progress","Waiting"].map(s => { const n = open.filter(i => i._st === s).length; return n ? `<span class="tag ${tagClass(s)}">${n} ${s.toLowerCase()}</span>` : ""; }).join("");
   const expanded = openId === a.id;
-  return `<article class="card ${open.length ? "attn" : ""}" data-id="${esc(a.id)}">
+  return `<article class="card ${open.length ? "attn" : ""} ${a.retired ? "retired" : ""}" data-id="${esc(a.id)}">
     <div class="head" role="button" tabindex="0" aria-expanded="${expanded}" data-toggle="${esc(a.id)}">
+      <img class="ico" src="${esc(iconOf(a))}" alt="" width="44" height="44" loading="lazy" data-letter="${esc(a.title.charAt(0))}">
       <span class="title">${esc(a.title)}</span>
       <span class="counts">${catOf(a.id) ? `<span class="cat-tag">${esc(catOf(a.id))}</span>` : ""}${counts}${a.retired ? `<span class="tag t-plain">Not in use</span>` : ""}</span>
       <p class="what">${esc(a.what)}</p>
@@ -344,6 +348,7 @@ $("list").addEventListener("click", e => {
   const t = e.target.closest("[data-toggle]"); if (t){ toggle(t.dataset.toggle); return; }
   const s = e.target.closest("[data-send]"); if (s) send(s.dataset.send);
 });
+$("list").addEventListener("error", e => { const im = e.target; if (im.classList && im.classList.contains("ico")){ const d = document.createElement("span"); d.className = "ico"; d.setAttribute("aria-hidden","true"); d.textContent = im.dataset.letter; im.replaceWith(d); } }, true);
 $("list").addEventListener("keydown", e => { const t = e.target.closest(".head"); if (t && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); toggle(t.dataset.toggle); } });
 $("list").addEventListener("input", e => { const d = e.target.dataset.draft; if (d) ls.set("hub-draft-" + d, e.target.value); });
 $("list").addEventListener("change", e => {
