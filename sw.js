@@ -1,7 +1,7 @@
 // App Hub: opens offline with the last-loaded page. Always asks the server first,
 // so updates arrive straight away. GitHub API calls (other site) are never touched.
-const CACHE_NAME = 'app-hub-v1';
-self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(['./', './index.html', './apps.json', './manifest.json', './icon-192.png'])).catch(() => {})); self.skipWaiting(); });
+const CACHE_NAME = 'app-hub-v2';
+self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(['./', './index.html', './apps.json', './manifest.json', './icon-192.png', './cloud.js'])).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('app-hub-') && k !== CACHE_NAME).map((k) => caches.delete(k))))); self.clients.claim(); });
 self.addEventListener('fetch', (e) => {
   const req = e.request;

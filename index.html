@@ -13,6 +13,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="App Hub">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="cloud.js"></script>
 <style>
 /* Layout: one column; summary line, filter chips, then a card per app that expands into requests */
 :root{
@@ -79,6 +83,27 @@ textarea{font:inherit;font-size:15px;width:100%;min-height:90px;resize:vertical;
 .shared{font-size:13px;color:var(--wait)}
 .empty{color:var(--muted);font-size:14px;margin:0}
 footer{color:var(--muted);font-size:13px;display:grid;gap:4px}
+/* search */
+.search{position:relative}
+.search input{font:inherit;font-size:16px;width:100%;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:11px 40px 11px 14px}
+.search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.search button{position:absolute;right:6px;top:50%;transform:translateY(-50%);font:inherit;font-size:18px;line-height:1;border:0;background:transparent;color:var(--muted);padding:6px 8px;cursor:pointer;border-radius:8px}
+/* category */
+.cat-tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.catrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.catrow label{font-size:14px;font-weight:600}
+.catrow input{font:inherit;font-size:15px;flex:1 1 180px;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.catrow input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.catrow .saved{font-size:13px;color:var(--muted)}
+/* bottom category tabs */
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs[hidden]{display:none}
+.tab{flex:0 0 auto;font:inherit;font-size:14px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tab small{font-weight:500;opacity:.75;margin-left:4px}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:no-preference){.card{transition:border-color .2s}}
 </style>
 </head>
@@ -92,6 +117,11 @@ footer{color:var(--muted);font-size:13px;display:grid;gap:4px}
     <button class="refresh" id="refresh" type="button">Refresh</button>
   </header>
 
+  <div class="search">
+    <input id="q" type="search" placeholder="Search apps" aria-label="Search apps" autocomplete="off">
+    <button type="button" id="qclear" aria-label="Clear search" hidden>×</button>
+  </div>
+
   <div class="chips" role="group" aria-label="Filter">
     <button class="chip" type="button" data-f="all" aria-pressed="true">All apps</button>
     <button class="chip" type="button" data-f="open" aria-pressed="false">Waiting requests</button>
@@ -101,16 +131,20 @@ footer{color:var(--muted);font-size:13px;display:grid;gap:4px}
   <div id="msg" hidden></div>
   <div class="list" id="list"></div>
 
+  <datalist id="catlist"></datalist>
   <footer>
     <span><b>How requests work:</b> write the change, tap <b>Continue in GitHub</b>, then <b>Submit</b>. When you're ready, say <b>“do my app requests”</b> in any chat with Claude. Claude's reply appears here.</span>
     <span id="checked"></span>
   </footer>
 </div>
+<nav class="tabs" id="tabs" aria-label="Categories" hidden></nav>
 
 <script>
 const REPO = "ciaran-apps/Hub";
 const API = "https://api.github.com/repos/" + REPO;
-let apps = [], issues = [], filter = "all", openId = null;
+let apps = [], issues = [], filter = "all", openId = null, query = "", tab = "all";
+// Categories: free text per app. Kept on this phone, and in your account when signed in.
+let cats = {}, catRef = null;
 const comments = {};   // issue number -> [{body, user, at}]
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -159,6 +193,50 @@ async function loadComments(issue){
   }catch(e){ if (cached) comments[issue.number] = cached.list; }
 }
 
+// ---- categories ----
+const CATS_KEY = "hub-cats", PEND_KEY = "hub-cats-pending";
+cats = ls.get(CATS_KEY, {});
+const catOf = id => (cats[id] || "").trim();
+function categories(){
+  const seen = new Map();
+  apps.forEach(a => { const c = catOf(a.id); if (c && !seen.has(c.toLowerCase())) seen.set(c.toLowerCase(), c); });
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+function setCat(id, value){
+  value = (value || "").trim().replace(/\s+/g, " ").slice(0, 40);
+  const existing = categories().find(c => c.toLowerCase() === value.toLowerCase());
+  if (existing) value = existing;                       // reuse the existing spelling
+  if (catOf(id) === value) return;
+  if (value) cats[id] = value; else delete cats[id];
+  ls.set(CATS_KEY, cats);
+  if (catRef) pushCat(id); else { const p = ls.get(PEND_KEY, {}); p[id] = true; ls.set(PEND_KEY, p); }
+}
+function pushCat(id){
+  const v = catOf(id);
+  catRef.set({ map: { [id]: v ? v : firebase.firestore.FieldValue.delete() }, updatedAt: Date.now() }, { merge: true })
+    .catch(() => window.Cloud && Cloud.note("Couldn't save categories to your account; they're kept on this phone and will retry."));
+}
+function connectCats(){
+  if (!window.Cloud) return;
+  let stop = null;
+  Cloud.onUser(u => {
+    if (stop){ stop(); stop = null; } catRef = null;
+    if (!u) return;
+    const ref = Cloud.userRef().collection("apphub").doc("categories");
+    // Upload anything changed while signed out, one app at a time (never replaces the whole set).
+    catRef = ref;
+    const pend = ls.get(PEND_KEY, {});
+    Object.keys(pend).forEach(pushCat);
+    ls.set(PEND_KEY, {});
+    stop = ref.onSnapshot(snap => {
+      if (!snap.exists){ if (snap.metadata.fromCache) return; const all = Object.keys(cats); if (all.length) all.forEach(pushCat); return; }
+      cats = Object.assign({}, (snap.data() || {}).map || {});
+      ls.set(CATS_KEY, cats);
+      if (!(document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) render();
+    }, () => {});
+  });
+}
+
 // ---- render ----
 function render(){
   document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.f === filter)));
@@ -166,14 +244,31 @@ function render(){
   const asks = waiting.filter(i => i._st === "Needs info").length;
   const live = apps.filter(a => !a.retired);
   $("sum").innerHTML = `<b>${live.length}</b> apps · <b>${waiting.length}</b> waiting request${waiting.length === 1 ? "" : "s"}` + (asks ? ` · <b>${asks}</b> need${asks === 1 ? "s" : ""} your answer` : "");
+  renderTabs();
   let v = apps.slice();
+  if (tab === "none") v = v.filter(a => !catOf(a.id));
+  else if (tab !== "all") v = v.filter(a => catOf(a.id).toLowerCase() === tab.toLowerCase());
+  const q = query.trim().toLowerCase();
+  if (q) v = v.filter(a => (a.title + " " + a.what + " " + catOf(a.id) + " " + a.id).toLowerCase().includes(q));
   if (filter === "open") v = v.filter(a => reqsFor(a.id).some(i => isOpen(i._st)));
   if (filter === "shared") v = v.filter(a => a.shared);
   v.sort((a, b) => (!!a.retired - !!b.retired) || (reqsFor(b.id).filter(i => isOpen(i._st)).length - reqsFor(a.id).filter(i => isOpen(i._st)).length));
-  if (!v.length){ $("list").innerHTML = `<p class="notice">${filter === "open" ? "No waiting requests. Open an app below and request a change." : "Nothing here."}</p>`; return; }
+  $("catlist").innerHTML = categories().map(c => `<option value="${esc(c)}"></option>`).join("");
+  if (!v.length){ $("list").innerHTML = `<p class="notice">${q ? "No apps match \u201c" + esc(query.trim()) + "\u201d." : filter === "open" ? "No waiting requests here." : "No apps in this category."}</p>`; return; }
   $("list").innerHTML = v.map(cardHtml).join("");
   const box = openId && $("t-" + openId);
   if (box){ box.value = ls.get("hub-draft-" + openId, ""); }
+}
+function renderTabs(){
+  const cs = categories(), el = $("tabs");
+  if (!cs.length){ el.hidden = true; tab = "all"; return; }
+  if (tab !== "all" && tab !== "none" && !cs.some(c => c.toLowerCase() === tab.toLowerCase())) tab = "all";
+  const none = apps.filter(a => !catOf(a.id)).length;
+  const count = c => apps.filter(a => catOf(a.id).toLowerCase() === c.toLowerCase()).length;
+  el.hidden = false;
+  el.innerHTML = `<button class="tab" type="button" data-tab="all" aria-pressed="${tab === "all"}">All<small>${apps.length}</small></button>`
+    + cs.map(c => `<button class="tab" type="button" data-tab="${esc(c)}" aria-pressed="${tab.toLowerCase() === c.toLowerCase()}">${esc(c)}<small>${count(c)}</small></button>`).join("")
+    + (none ? `<button class="tab" type="button" data-tab="none" aria-pressed="${tab === "none"}">No category<small>${none}</small></button>` : "");
 }
 function cardHtml(a){
   const rq = reqsFor(a.id), open = rq.filter(i => isOpen(i._st));
@@ -182,7 +277,7 @@ function cardHtml(a){
   return `<article class="card ${open.length ? "attn" : ""}" data-id="${esc(a.id)}">
     <div class="head" role="button" tabindex="0" aria-expanded="${expanded}" data-toggle="${esc(a.id)}">
       <span class="title">${esc(a.title)}</span>
-      <span class="counts">${counts}${a.retired ? `<span class="tag t-plain">Not in use</span>` : ""}</span>
+      <span class="counts">${catOf(a.id) ? `<span class="cat-tag">${esc(catOf(a.id))}</span>` : ""}${counts}${a.retired ? `<span class="tag t-plain">Not in use</span>` : ""}</span>
       <p class="what">${esc(a.what)}</p>
     </div>
     <div class="acts">
@@ -190,6 +285,11 @@ function cardHtml(a){
       <button class="btn sec" type="button" data-toggle="${esc(a.id)}">${expanded ? "Close" : "Request a change"}</button>
     </div>
     <div class="panel" ${expanded ? "" : "hidden"}>
+      <div class="catrow">
+        <label for="c-${esc(a.id)}">Category</label>
+        <input id="c-${esc(a.id)}" list="catlist" data-cat="${esc(a.id)}" value="${esc(catOf(a.id))}" placeholder="e.g. Sport, Health, Work" maxlength="40" autocomplete="off">
+        <span class="saved" id="cs-${esc(a.id)}"></span>
+      </div>
       ${a.shared ? `<p class="shared">Your friends use this app, so Claude will check with you before any change goes live.</p>` : ""}
       <div class="form">
         <label for="t-${esc(a.id)}">What would you like changed?</label>
@@ -246,6 +346,19 @@ $("list").addEventListener("click", e => {
 });
 $("list").addEventListener("keydown", e => { const t = e.target.closest(".head"); if (t && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); toggle(t.dataset.toggle); } });
 $("list").addEventListener("input", e => { const d = e.target.dataset.draft; if (d) ls.set("hub-draft-" + d, e.target.value); });
+$("list").addEventListener("change", e => {
+  const id = e.target.dataset.cat; if (!id) return;
+  setCat(id, e.target.value);
+  e.target.value = catOf(id);
+  const s = $("cs-" + id); if (s) s.textContent = "Saved";
+  renderTabs(); $("catlist").innerHTML = categories().map(c => `<option value="${esc(c)}"></option>`).join("");
+  const head = document.querySelector(`.card[data-id="${CSS.escape(id)}"] .counts`);
+  if (head){ const old = head.querySelector(".cat-tag"); if (old) old.remove(); if (catOf(id)) head.insertAdjacentHTML("afterbegin", `<span class="cat-tag">${esc(catOf(id))}</span>`); }
+});
+$("list").addEventListener("keydown", e => { if (e.target.dataset.cat && e.key === "Enter"){ e.preventDefault(); e.target.blur(); } });
+$("q").addEventListener("input", e => { query = e.target.value; $("qclear").hidden = !query; render(); });
+$("qclear").addEventListener("click", () => { query = ""; $("q").value = ""; $("qclear").hidden = true; render(); $("q").focus(); });
+$("tabs").addEventListener("click", e => { const t = e.target.closest("[data-tab]"); if (!t) return; tab = t.dataset.tab; ls.set("hub-tab", tab); openId = null; render(); window.scrollTo({ top: 0 }); });
 document.querySelector(".chips").addEventListener("click", e => { const c = e.target.closest(".chip"); if (!c) return; filter = c.dataset.f; ls.set("hub-filter", filter); render(); });
 $("refresh").addEventListener("click", () => refresh(true));
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(false); });
@@ -270,16 +383,18 @@ async function refresh(manual){
          : "Couldn't check requests just now. Showing the last ones saved on this phone.", true);
   }
   $("refresh").textContent = "Refresh"; busy = false;
-  if (!(document.activeElement && document.activeElement.tagName === "TEXTAREA")) render();
+  if (!(document.activeElement && /TEXTAREA/.test(document.activeElement.tagName) || (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.cat))) render();
 }
 
 (async () => {
   filter = ls.get("hub-filter", "all");
+  tab = ls.get("hub-tab", "all");
   try{ apps = await (await fetch("apps.json", { cache:"no-cache" })).json(); ls.set("hub-apps", apps); }
   catch(e){ apps = ls.get("hub-apps", []); }
   const cached = ls.get("hub-issues", null);
   if (cached) applyIssues(cached.list, cached.at);
   render();
+  connectCats();
   refresh(false);
 })();
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
