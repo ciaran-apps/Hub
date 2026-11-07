@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>App Hub</title>
+<meta name="description" content="All of Ciaran's apps in one place, with change requests.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f4f3f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14131c" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="App Hub">
+<style>
+/* Layout: one column; summary line, filter chips, then a card per app that expands into requests */
+:root{
+  --bg:#f4f3f8; --surface:#ffffff; --fg:#1c1b26; --muted:#62606f; --line:#dedce8;
+  --accent:#4b3fc4; --accent-ink:#ffffff; --accent-soft:#e9e7fb;
+  --wait:#9a5b00; --wait-soft:#fbefd9; --prog:#1f5fa8; --prog-soft:#e0ecfa;
+  --done:#24734a; --done-soft:#dff1e7; --ask:#b23a2e; --ask-soft:#fae3e0;
+  --f:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#14131c; --surface:#1d1c28; --fg:#ebe9f5; --muted:#a19eb4; --line:#2f2d3e;
+  --accent:#a99ffb; --accent-ink:#15132a; --accent-soft:#2a2650;
+  --wait:#f0b45a; --wait-soft:#3a2c14; --prog:#82b4f2; --prog-soft:#172a42;
+  --done:#7fd3a3; --done-soft:#173325; --ask:#f19a8e; --ask-soft:#3d1d19; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.45 var(--f);-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:calc(18px + env(safe-area-inset-top,0px)) calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:28px;line-height:1.1;letter-spacing:-.01em}
+.sum{margin:4px 0 0;color:var(--muted);font-size:14px}
+.sum b{color:var(--fg)}
+.refresh{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:7px 14px;cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.notice{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--muted)}
+.notice.err{border-color:var(--ask);color:var(--fg)}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;min-width:0}
+.card.attn{border-color:var(--accent)}
+.head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:14px 14px 12px;cursor:pointer;align-items:start}
+.title{font-weight:700;font-size:17px}
+.what{grid-column:1/-1;color:var(--muted);font-size:14px;margin:0}
+.counts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tag{font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.t-wait{background:var(--wait-soft);color:var(--wait)}
+.t-prog{background:var(--prog-soft);color:var(--prog)}
+.t-done{background:var(--done-soft);color:var(--done)}
+.t-ask{background:var(--ask-soft);color:var(--ask)}
+.t-plain{background:var(--accent-soft);color:var(--fg);font-weight:500}
+.acts{display:flex;gap:8px;flex-wrap:wrap;padding:0 14px 14px}
+.btn{font:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:8px 14px;text-decoration:none;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+.btn.sec{background:transparent;color:var(--accent);border-color:var(--line)}
+.btn.small{font-size:13px;padding:5px 10px;font-weight:500}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,.chip:focus-visible,.refresh:focus-visible,.head:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{border-top:1px solid var(--line);padding:12px 14px 14px;display:grid;gap:12px}
+.panel[hidden]{display:none}
+.panel h3{margin:0;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.req{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px;background:var(--bg);min-width:0}
+.req-top{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12px;color:var(--muted)}
+.req-top a{color:var(--muted)}
+.req-title{margin:0;font-weight:600;overflow-wrap:anywhere}
+.req-body{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.reply{margin:0;padding:8px 10px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 8px 8px 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.reply small{display:block;color:var(--muted);font-weight:600;margin-bottom:2px}
+.form{display:grid;gap:8px}
+.form label{font-size:14px;font-weight:600}
+textarea{font:inherit;font-size:15px;width:100%;min-height:90px;resize:vertical;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.shared{font-size:13px;color:var(--wait)}
+.empty{color:var(--muted);font-size:14px;margin:0}
+footer{color:var(--muted);font-size:13px;display:grid;gap:4px}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .2s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>App Hub</h1>
+      <p class="sum" id="sum">Loading your apps…</p>
+    </div>
+    <button class="refresh" id="refresh" type="button">Refresh</button>
+  </header>
+
+  <div class="chips" role="group" aria-label="Filter">
+    <button class="chip" type="button" data-f="all" aria-pressed="true">All apps</button>
+    <button class="chip" type="button" data-f="open" aria-pressed="false">Waiting requests</button>
+    <button class="chip" type="button" data-f="shared" aria-pressed="false">Friends' apps</button>
+  </div>
+
+  <div id="msg" hidden></div>
+  <div class="list" id="list"></div>
+
+  <footer>
+    <span><b>How requests work:</b> write the change, tap <b>Continue in GitHub</b>, then <b>Submit</b>. When you're ready, say <b>“do my app requests”</b> in any chat with Claude. Claude's reply appears here.</span>
+    <span id="checked"></span>
+  </footer>
+</div>
+
+<script>
+const REPO = "ciaran-apps/Hub";
+const API = "https://api.github.com/repos/" + REPO;
+let apps = [], issues = [], filter = "all", openId = null;
+const comments = {};   // issue number -> [{body, user, at}]
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ls = { get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+             set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+const day = t => new Date(t).toLocaleDateString(undefined, {day:"numeric", month:"short"});
+
+// ---- requests (GitHub issues in the Hub repo, one label per app) ----
+function appOf(issue){
+  const ids = new Set(apps.map(a => a.id));
+  const l = (issue.labels || []).map(x => typeof x === "string" ? x : x.name).find(n => ids.has(n));
+  if (l) return l;
+  const m = /^\s*\[?([^\]:]+)[\]:]/.exec(issue.title || "");          // fallback: "App title: ..." or "[App title] ..."
+  if (m){ const t = m[1].trim().toLowerCase(); const a = apps.find(a => a.title.toLowerCase() === t || a.id === t); if (a) return a.id; }
+  return null;
+}
+function statusOf(issue){
+  const names = (issue.labels || []).map(x => typeof x === "string" ? x : x.name);
+  if (issue.state === "closed") return issue.state_reason === "not_planned" ? "Withdrawn" : "Done";
+  if (names.includes("needs-info")) return "Needs info";
+  if (names.includes("in-progress")) return "In progress";
+  return "Waiting";
+}
+const tagClass = s => ({ "Waiting":"t-wait", "In progress":"t-prog", "Done":"t-done", "Needs info":"t-ask", "Withdrawn":"t-plain" }[s] || "t-plain");
+const isOpen = s => s === "Waiting" || s === "In progress" || s === "Needs info";
+const reqsFor = id => issues.filter(i => i._app === id).sort((a, b) => (isOpen(b._st) - isOpen(a._st)) || (new Date(b.created_at) - new Date(a.created_at)));
+
+async function loadIssues(){
+  const res = await fetch(API + "/issues?state=all&per_page=100&sort=created&direction=desc", { headers:{ Accept:"application/vnd.github+json" } });
+  if (res.status === 403 || res.status === 429) throw new Error("rate");
+  if (!res.ok) throw new Error("http " + res.status);
+  const list = (await res.json()).filter(i => !i.pull_request);
+  ls.set("hub-issues", { at: Date.now(), list });
+  return list;
+}
+async function loadComments(issue){
+  if (!issue.comments) { comments[issue.number] = []; return; }
+  const cached = ls.get("hub-c-" + issue.number, null);
+  if (cached && cached.updated === issue.updated_at) { comments[issue.number] = cached.list; return; }
+  try{
+    const res = await fetch(API + "/issues/" + issue.number + "/comments?per_page=50", { headers:{ Accept:"application/vnd.github+json" } });
+    if (!res.ok) throw 0;
+    const list = (await res.json()).map(c => ({ body:c.body, user:c.user && c.user.login, at:c.created_at }));
+    comments[issue.number] = list;
+    ls.set("hub-c-" + issue.number, { updated: issue.updated_at, list });
+  }catch(e){ if (cached) comments[issue.number] = cached.list; }
+}
+
+// ---- render ----
+function render(){
+  document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.f === filter)));
+  const waiting = issues.filter(i => i._app && isOpen(i._st));
+  const asks = waiting.filter(i => i._st === "Needs info").length;
+  const live = apps.filter(a => !a.retired);
+  $("sum").innerHTML = `<b>${live.length}</b> apps · <b>${waiting.length}</b> waiting request${waiting.length === 1 ? "" : "s"}` + (asks ? ` · <b>${asks}</b> need${asks === 1 ? "s" : ""} your answer` : "");
+  let v = apps.slice();
+  if (filter === "open") v = v.filter(a => reqsFor(a.id).some(i => isOpen(i._st)));
+  if (filter === "shared") v = v.filter(a => a.shared);
+  v.sort((a, b) => (!!a.retired - !!b.retired) || (reqsFor(b.id).filter(i => isOpen(i._st)).length - reqsFor(a.id).filter(i => isOpen(i._st)).length));
+  if (!v.length){ $("list").innerHTML = `<p class="notice">${filter === "open" ? "No waiting requests. Open an app below and request a change." : "Nothing here."}</p>`; return; }
+  $("list").innerHTML = v.map(cardHtml).join("");
+  const box = openId && $("t-" + openId);
+  if (box){ box.value = ls.get("hub-draft-" + openId, ""); }
+}
+function cardHtml(a){
+  const rq = reqsFor(a.id), open = rq.filter(i => isOpen(i._st));
+  const counts = ["Needs info","In progress","Waiting"].map(s => { const n = open.filter(i => i._st === s).length; return n ? `<span class="tag ${tagClass(s)}">${n} ${s.toLowerCase()}</span>` : ""; }).join("");
+  const expanded = openId === a.id;
+  return `<article class="card ${open.length ? "attn" : ""}" data-id="${esc(a.id)}">
+    <div class="head" role="button" tabindex="0" aria-expanded="${expanded}" data-toggle="${esc(a.id)}">
+      <span class="title">${esc(a.title)}</span>
+      <span class="counts">${counts}${a.retired ? `<span class="tag t-plain">Not in use</span>` : ""}</span>
+      <p class="what">${esc(a.what)}</p>
+    </div>
+    <div class="acts">
+      <a class="btn pri" href="${esc(a.url)}" target="_blank" rel="noopener">Open app</a>
+      <button class="btn sec" type="button" data-toggle="${esc(a.id)}">${expanded ? "Close" : "Request a change"}</button>
+    </div>
+    <div class="panel" ${expanded ? "" : "hidden"}>
+      ${a.shared ? `<p class="shared">Your friends use this app, so Claude will check with you before any change goes live.</p>` : ""}
+      <div class="form">
+        <label for="t-${esc(a.id)}">What would you like changed?</label>
+        <textarea id="t-${esc(a.id)}" data-draft="${esc(a.id)}" placeholder="e.g. Add a dark mode, or move the totals to the top"></textarea>
+        <div><button class="btn pri" type="button" data-send="${esc(a.id)}">Continue in GitHub</button></div>
+        <p class="hint">GitHub opens with your request filled in. Tap <b>Submit new issue</b> there, then come back. If it opens in the GitHub app and the text is missing, open it in Chrome instead.</p>
+      </div>
+      <h3>Requests</h3>
+      ${rq.length ? rq.map(reqHtml).join("") : `<p class="empty">No requests for this app yet.</p>`}
+      <a class="btn sec small" href="https://github.com/${esc(a.owner)}/${esc(a.repo)}" target="_blank" rel="noopener">Code on GitHub</a>
+    </div>
+  </article>`;
+}
+function reqHtml(i){
+  const title = (i.title || "").replace(/^\s*\[[^\]]+\]\s*/, "").replace(new RegExp("^" + (apps.find(a => a.id === i._app)?.title || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ":\\s*", "i"), "");
+  const body = (i.body || "").split(/\n\s*—\s*\nApp:/)[0].trim();
+  const cs = comments[i.number];
+  const replies = cs === undefined ? `<p class="hint">Loading replies…</p>` : cs.map(c => `<p class="reply"><small>${esc(c.user || "Reply")} · ${esc(day(c.at))}</small>${esc(c.body)}</p>`).join("");
+  return `<div class="req">
+    <div class="req-top"><span class="tag ${tagClass(i._st)}">${esc(i._st)}</span><span>${esc(day(i.created_at))}</span><a href="${esc(i.html_url)}" target="_blank" rel="noopener">#${i.number} on GitHub</a></div>
+    <p class="req-title">${esc(title)}</p>
+    ${body && body !== title ? `<p class="req-body">${esc(body)}</p>` : ""}
+    ${replies}
+  </div>`;
+}
+
+// ---- actions ----
+async function toggle(id){
+  openId = openId === id ? null : id;
+  render();
+  if (openId){
+    const pend = reqsFor(openId).filter(i => comments[i.number] === undefined);
+    await Promise.all(pend.map(loadComments));
+    if (openId === id) render();
+  }
+}
+function send(id){
+  const a = apps.find(x => x.id === id), box = $("t-" + id), text = (box.value || "").trim();
+  if (!text){ box.focus(); box.placeholder = "Type what you'd like changed first."; return; }
+  const first = text.split("\n")[0];
+  const title = a.title + ": " + (first.length > 70 ? first.slice(0, 67) + "…" : first);
+  const body = text + "\n\n—\nApp: " + a.title + " (" + a.id + ")";
+  const url = "https://github.com/" + REPO + "/issues/new?" + new URLSearchParams({ title, body, labels: a.id }).toString();
+  ls.set("hub-draft-" + id, "");
+  box.value = "";
+  // Open GitHub in a new tab; only if that's blocked, go there in this tab.
+  const w = window.open(url, "_blank");
+  if (w) { try{ w.opener = null; }catch(e){} } else location.href = url;
+  render();
+}
+$("list").addEventListener("click", e => {
+  const t = e.target.closest("[data-toggle]"); if (t){ toggle(t.dataset.toggle); return; }
+  const s = e.target.closest("[data-send]"); if (s) send(s.dataset.send);
+});
+$("list").addEventListener("keydown", e => { const t = e.target.closest(".head"); if (t && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); toggle(t.dataset.toggle); } });
+$("list").addEventListener("input", e => { const d = e.target.dataset.draft; if (d) ls.set("hub-draft-" + d, e.target.value); });
+document.querySelector(".chips").addEventListener("click", e => { const c = e.target.closest(".chip"); if (!c) return; filter = c.dataset.f; ls.set("hub-filter", filter); render(); });
+$("refresh").addEventListener("click", () => refresh(true));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(false); });
+
+function setMsg(text, err){ const m = $("msg"); if (!text){ m.hidden = true; return; } m.hidden = false; m.className = "notice" + (err ? " err" : ""); m.textContent = text; }
+function applyIssues(list, at){
+  issues = list.map(i => Object.assign(i, { _app: null, _st: null }));
+  issues.forEach(i => { i._app = appOf(i); i._st = statusOf(i); });
+  $("checked").textContent = at ? "Requests last checked " + new Date(at).toLocaleString(undefined, {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}) + "." : "";
+}
+let busy = false;
+async function refresh(manual){
+  if (busy) return; busy = true;
+  if (manual) $("refresh").textContent = "Checking…";
+  try{
+    const list = await loadIssues();
+    applyIssues(list, Date.now()); setMsg("");
+    if (openId) await Promise.all(reqsFor(openId).map(i => { delete comments[i.number]; return loadComments(i); }));
+  }catch(e){
+    setMsg(e.message === "rate" ? "GitHub is limiting how often requests can be checked. Try again in a few minutes."
+         : navigator.onLine === false ? "You're offline. Showing requests from the last time you checked."
+         : "Couldn't check requests just now. Showing the last ones saved on this phone.", true);
+  }
+  $("refresh").textContent = "Refresh"; busy = false;
+  if (!(document.activeElement && document.activeElement.tagName === "TEXTAREA")) render();
+}
+
+(async () => {
+  filter = ls.get("hub-filter", "all");
+  try{ apps = await (await fetch("apps.json", { cache:"no-cache" })).json(); ls.set("hub-apps", apps); }
+  catch(e){ apps = ls.get("hub-apps", []); }
+  const cached = ls.get("hub-issues", null);
+  if (cached) applyIssues(cached.list, cached.at);
+  render();
+  refresh(false);
+})();
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>

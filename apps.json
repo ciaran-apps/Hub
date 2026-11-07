@@ -1,0 +1,19 @@
+[
+ {"id":"work-tt","title":"Ticket Time Tracker","repo":"Work-TT","owner":"ciaran-apps","url":"https://ciaran-apps.github.io/Work-TT/","what":"Time on work tickets, ticket statuses, notes and CSV export."},
+ {"id":"bet-tracker","title":"Bet Tracker","repo":"Bet-Tracker","owner":"ciaran-apps","url":"https://bets.ciarandevine.uk/","what":"Bets, wins and losses across the season."},
+ {"id":"quizzle","title":"Quizzle","repo":"Quizzle","owner":"ciaran-apps","url":"https://quiz.ciarandevine.uk/","what":"Hard daily quiz with fresh, fact-checked questions every day."},
+ {"id":"tvshows","title":"TV Shows","repo":"Tvshows","owner":"ciaran-apps","url":"https://tvshows.ciarandevine.uk/","what":"TV rewatch tracker with episodes, watch log and history."},
+ {"id":"betbuilder","title":"Betbuilder","repo":"Betbuilder","owner":"ciaran-apps","url":"https://betbuilder.ciarandevine.uk/","what":"Premier League stats, match picks and a prediction tracker."},
+ {"id":"united","title":"United Squad","repo":"United","owner":"ciaran-apps","url":"https://united.ciarandevine.uk/","what":"Man United squad, transfers, managers and player stats."},
+ {"id":"workout-roulette","title":"Workout Roulette","repo":"Workout-Roulette","owner":"ciaran-apps","url":"https://workouts.ciarandevine.uk/","what":"Random HIIT and stretching sessions with a timer and log."},
+ {"id":"ffauction","title":"Fantasy Football","repo":"FFAuction","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/FFAuction/","what":"Auction-draft fantasy league with standings and stats.","shared":true},
+ {"id":"lms","title":"Last Man Standing","repo":"LMS","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/LMS/","what":"Premier League last-player-standing game for the group.","shared":true},
+ {"id":"syndicate","title":"Lads Night Out","repo":"Syndicate","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/Syndicate/","what":"Group ledger, pot tracker and Lotto log.","shared":true},
+ {"id":"match-predictor","title":"Match Predictor","repo":"Match-Predictor","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/Match-Predictor/","what":"Over 2.5 goals and both-teams-to-score chances, updated daily."},
+ {"id":"dailydisciplines","title":"Daily Disciplines","repo":"DailyDisciplines","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/DailyDisciplines/","what":"Daily habits with streaks and XP, plus weight, calories and drinks."},
+ {"id":"running-log","title":"Running Log","repo":"Running-Log","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/Running-Log/","what":"Running mileage, shoe rotation and race log."},
+ {"id":"bills","title":"The Ledger","repo":"Bills","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/Bills/","what":"Household bills, savings, credit card and calendar."},
+ {"id":"ivf","title":"IVF Expenses","repo":"IVF","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/IVF/","what":"IVF trips, treatment and spending."},
+ {"id":"poker","title":"GTO Hand Review","repo":"Poker","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/Poker/","what":"Review poker hands against game-theory-optimal play."},
+ {"id":"rota","title":"Work Rota","repo":"Rota","owner":"ciaranpdevine-art","url":"https://ciaranpdevine-art.github.io/Rota/","what":"Work hours by site, week by week (no longer used).","retired":true}
+]
