@@ -99,6 +99,9 @@ footer{color:var(--muted);font-size:13px;display:grid;gap:4px}
 .catrow input{font:inherit;font-size:15px;flex:1 1 180px;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .catrow input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .catrow .saved{font-size:13px;color:var(--muted)}
+.unusedrow{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:600;cursor:pointer}
+.unusedrow input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.unusedrow span{font-weight:400;color:var(--muted)}
 /* bottom category tabs */
 body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
@@ -210,8 +213,18 @@ async function loadComments(issue){
 }
 
 // ---- categories ----
-const CATS_KEY = "hub-cats", PEND_KEY = "hub-cats-pending";
+const CATS_KEY = "hub-cats", PEND_KEY = "hub-cats-pending", UNUSED_KEY = "hub-unused";
 cats = ls.get(CATS_KEY, {});
+let unused = ls.get(UNUSED_KEY, {});                     // {appId: true|false}; missing = apps.json default
+const isUnused = a => (a.id in unused) ? !!unused[a.id] : !!a.retired;
+function setUnused(id, on){
+  unused[id] = !!on; ls.set(UNUSED_KEY, unused);
+  if (catRef) pushUnused(id); else { const p = ls.get(PEND_KEY, {}); p["u:" + id] = true; ls.set(PEND_KEY, p); }
+}
+function pushUnused(id){
+  catRef.set({ unused: { [id]: !!unused[id] }, updatedAt: Date.now() }, { merge: true })
+    .catch(() => window.Cloud && Cloud.note("Couldn't save to your account; kept on this phone and will retry."));
+}
 const catOf = id => (cats[id] || "").trim();
 function categories(){
   const seen = new Map();
@@ -242,12 +255,13 @@ function connectCats(){
     // Upload anything changed while signed out, one app at a time (never replaces the whole set).
     catRef = ref;
     const pend = ls.get(PEND_KEY, {});
-    Object.keys(pend).forEach(pushCat);
+    Object.keys(pend).forEach(k => k.startsWith("u:") ? pushUnused(k.slice(2)) : pushCat(k));
     ls.set(PEND_KEY, {});
     stop = ref.onSnapshot(snap => {
-      if (!snap.exists){ if (snap.metadata.fromCache) return; const all = Object.keys(cats); if (all.length) all.forEach(pushCat); return; }
+      if (!snap.exists){ if (snap.metadata.fromCache) return; Object.keys(cats).forEach(pushCat); Object.keys(unused).forEach(pushUnused); return; }
       cats = Object.assign({}, (snap.data() || {}).map || {});
-      ls.set(CATS_KEY, cats);
+      unused = Object.assign({}, (snap.data() || {}).unused || {});
+      ls.set(CATS_KEY, cats); ls.set(UNUSED_KEY, unused);
       if (!(document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) render();
     }, () => {});
   });
@@ -258,37 +272,41 @@ function render(){
   document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.f === filter)));
   const waiting = issues.filter(i => i._app && isOpen(i._st));
   const asks = waiting.filter(i => i._st === "Needs info").length;
-  const live = apps.filter(a => !a.retired);
+  const live = apps.filter(a => !isUnused(a));
   $("sum").innerHTML = `<b>${live.length}</b> apps · <b>${waiting.length}</b> waiting request${waiting.length === 1 ? "" : "s"}` + (asks ? ` · <b>${asks}</b> need${asks === 1 ? "s" : ""} your answer` : "");
   renderTabs();
-  let v = apps.slice();
+  let v = tab === "unused" ? apps.filter(isUnused) : live.slice();
   if (tab === "none") v = v.filter(a => !catOf(a.id));
-  else if (tab !== "all") v = v.filter(a => catOf(a.id).toLowerCase() === tab.toLowerCase());
+  else if (tab !== "all" && tab !== "unused") v = v.filter(a => catOf(a.id).toLowerCase() === tab.toLowerCase());
   const q = query.trim().toLowerCase();
   if (q) v = v.filter(a => (a.title + " " + a.what + " " + catOf(a.id) + " " + a.id).toLowerCase().includes(q));
   if (filter === "open") v = v.filter(a => reqsFor(a.id).some(i => isOpen(i._st)));
   if (filter === "shared") v = v.filter(a => a.shared);
   if (filter === "risk") v = v.filter(needsAttention);
-  v.sort((a, b) => (!!a.retired - !!b.retired) || (reqsFor(b.id).filter(i => isOpen(i._st)).length - reqsFor(a.id).filter(i => isOpen(i._st)).length));
+  v.sort((a, b) => (reqsFor(b.id).filter(i => isOpen(i._st)).length - reqsFor(a.id).filter(i => isOpen(i._st)).length));
   $("catlist").innerHTML = categories().map(c => `<option value="${esc(c)}"></option>`).join("");
-  if (!v.length){ $("list").innerHTML = `<p class="notice">${q ? "No apps match \u201c" + esc(query.trim()) + "\u201d." : filter === "open" ? "No waiting requests here." : filter === "risk" ? "Nothing needs attention here." : "No apps in this category."}</p>`; return; }
+  if (!v.length){ $("list").innerHTML = `<p class="notice">${q ? "No apps match \u201c" + esc(query.trim()) + "\u201d." : filter === "open" ? "No waiting requests here." : filter === "risk" ? "Nothing needs attention here." : tab === "unused" ? "No apps are marked as not in use." : "No apps in this category."}</p>`; return; }
   $("list").innerHTML = v.map(cardHtml).join("");
   const box = openId && $("t-" + openId);
   if (box){ box.value = ls.get("hub-draft-" + openId, ""); }
 }
 function renderTabs(){
-  const cs = categories(), el = $("tabs");
-  if (!cs.length){ el.hidden = true; tab = "all"; return; }
-  if (tab !== "all" && tab !== "none" && !cs.some(c => c.toLowerCase() === tab.toLowerCase())) tab = "all";
-  const none = apps.filter(a => !catOf(a.id)).length;
-  const count = c => apps.filter(a => catOf(a.id).toLowerCase() === c.toLowerCase()).length;
+  const live = apps.filter(a => !isUnused(a)), off = apps.length - live.length, el = $("tabs");
+  const seen = new Map();
+  live.forEach(a => { const c = catOf(a.id); if (c && !seen.has(c.toLowerCase())) seen.set(c.toLowerCase(), c); });
+  const cs = [...seen.values()].sort((a, b) => a.localeCompare(b));
+  if (!cs.length && !off){ el.hidden = true; tab = "all"; return; }
+  if (tab === "unused" ? !off : (tab !== "all" && tab !== "none" && !cs.some(c => c.toLowerCase() === tab.toLowerCase()))) tab = "all";
+  const none = live.filter(a => !catOf(a.id)).length;
+  const count = c => live.filter(a => catOf(a.id).toLowerCase() === c.toLowerCase()).length;
   el.hidden = false;
-  el.innerHTML = `<button class="tab" type="button" data-tab="all" aria-pressed="${tab === "all"}">All<small>${apps.length}</small></button>`
+  el.innerHTML = `<button class="tab" type="button" data-tab="all" aria-pressed="${tab === "all"}">All<small>${live.length}</small></button>`
     + cs.map(c => `<button class="tab" type="button" data-tab="${esc(c)}" aria-pressed="${tab.toLowerCase() === c.toLowerCase()}">${esc(c)}<small>${count(c)}</small></button>`).join("")
-    + (none ? `<button class="tab" type="button" data-tab="none" aria-pressed="${tab === "none"}">No category<small>${none}</small></button>` : "");
+    + (none && cs.length ? `<button class="tab" type="button" data-tab="none" aria-pressed="${tab === "none"}">No category<small>${none}</small></button>` : "")
+    + (off ? `<button class="tab" type="button" data-tab="unused" aria-pressed="${tab === "unused"}">Not in use<small>${off}</small></button>` : "");
 }
 function riskOf(a){ return (a.health && a.health.risk) || ""; }
-function needsAttention(a){ const r = riskOf(a); return !a.retired && (r === "Medium" || r === "High"); }
+function needsAttention(a){ const r = riskOf(a); return !isUnused(a) && (r === "Medium" || r === "High"); }
 function healthHtml(a){
   const h = a.health; if (!h) return "";
   const list = (xs, none) => xs && xs.length ? `<ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<dd class="none">${none}</dd>`;
@@ -309,11 +327,11 @@ function cardHtml(a){
   const rq = reqsFor(a.id), open = rq.filter(i => isOpen(i._st));
   const counts = ["Needs info","In progress","Waiting"].map(s => { const n = open.filter(i => i._st === s).length; return n ? `<span class="tag ${tagClass(s)}">${n} ${s.toLowerCase()}</span>` : ""; }).join("");
   const expanded = openId === a.id;
-  return `<article class="card ${open.length ? "attn" : ""} ${a.retired ? "retired" : ""}" data-id="${esc(a.id)}">
+  return `<article class="card ${open.length ? "attn" : ""} ${isUnused(a) ? "retired" : ""}" data-id="${esc(a.id)}">
     <div class="head" role="button" tabindex="0" aria-expanded="${expanded}" data-toggle="${esc(a.id)}">
       <img class="ico" src="${esc(iconOf(a))}" alt="" width="44" height="44" loading="lazy" data-letter="${esc(a.title.charAt(0))}">
       <span class="title">${esc(a.title)}</span>
-      <span class="counts">${catOf(a.id) ? `<span class="cat-tag">${esc(catOf(a.id))}</span>` : ""}${counts}${a.retired ? `<span class="tag t-plain">Not in use</span>` : needsAttention(a) ? `<span class="tag r-${riskOf(a).toLowerCase()}">${esc(riskOf(a))} risk</span>` : ""}</span>
+      <span class="counts">${catOf(a.id) ? `<span class="cat-tag">${esc(catOf(a.id))}</span>` : ""}${counts}${isUnused(a) ? `<span class="tag t-plain">Not in use</span>` : needsAttention(a) ? `<span class="tag r-${riskOf(a).toLowerCase()}">${esc(riskOf(a))} risk</span>` : ""}</span>
       <p class="what">${esc(a.what)}</p>
     </div>
     <div class="acts">
@@ -327,6 +345,7 @@ function cardHtml(a){
         <input id="c-${esc(a.id)}" list="catlist" data-cat="${esc(a.id)}" value="${esc(catOf(a.id))}" placeholder="e.g. Sport, Health, Work" maxlength="40" autocomplete="off">
         <span class="saved" id="cs-${esc(a.id)}"></span>
       </div>
+      <label class="unusedrow"><input type="checkbox" data-unused="${esc(a.id)}" ${isUnused(a) ? "checked" : ""}> Not in use <span>(hides it from the main list)</span></label>
       ${a.shared ? `<p class="shared">Your friends use this app, so Claude will check with you before any change goes live.</p>` : ""}
       <div class="form">
         <label for="t-${esc(a.id)}">What would you like changed?</label>
@@ -385,6 +404,8 @@ $("list").addEventListener("error", e => { const im = e.target; if (im.classList
 $("list").addEventListener("keydown", e => { const t = e.target.closest(".head"); if (t && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); toggle(t.dataset.toggle); } });
 $("list").addEventListener("input", e => { const d = e.target.dataset.draft; if (d) ls.set("hub-draft-" + d, e.target.value); });
 $("list").addEventListener("change", e => {
+  const u = e.target.dataset.unused;
+  if (u){ setUnused(u, e.target.checked); openId = null; render(); return; }
   const id = e.target.dataset.cat; if (!id) return;
   setCat(id, e.target.value);
   e.target.value = catOf(id);
