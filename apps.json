@@ -65,7 +65,7 @@
     "repo": "Quizzle",
     "owner": "ciaran-apps",
     "url": "https://quiz.ciarandevine.uk/",
-    "what": "Hard daily quiz with fresh, fact-checked questions every day.",
+    "what": "Daily pub-style quiz with fresh, fact-checked questions every day.",
     "health": {
       "risk": "Low",
       "data": "Questions live in the repo. Your streak and today's progress are on this phone only.",
